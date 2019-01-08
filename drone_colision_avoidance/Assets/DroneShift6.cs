@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DroneShift6 : MonoBehaviour
+public class DroneShift6 : MonoBehaviour // pas fonctionnel
 {
 
     public GameObject src;

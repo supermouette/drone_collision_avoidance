@@ -4,30 +4,37 @@ using UnityEngine;
 
 public class DroneBetterDetector : MonoBehaviour
 {
+    /*
+        Il s'agit de la classe qui gère le comportement d'un drone qui utilise l'algorithme avoidance shift (par la droite).
+        Pour simuler un capteur monopoint type infrarougre/ultrason, on étudie la collision entre un cone et les obstacles (mime les cones de détection).
+    */
+    public GameObject src; // le point de départ du drone
+    public GameObject target; // l'objectif du drone
+    public int state; // l'état du drone
+    public float speed = 0.05F; // la vitesse max du drone
+    public float minH = 2; // la hauteur minimale du drone (utilisé pour le décollage)
+    public float minD = 2; // la distance minimale à un obstacle avant que celui ci soit considéré comme dangereux
+    private Vector3 direction; // la direction du drone
+    private float deltaD = 0; // utilisé lors d'une manoeuvre d'évitement pour mesurer le temps écouler depuis la rencontre d'un obstacle
+    public GameObject led; // la led, qui permet de visualiser l'état du drone
+    public GameObject cone; // le cone (de détection)
 
-    public GameObject src;
-    public GameObject target;
-    public int state;
-    public float speed = 0.05F;
-    public float minH = 2;
-    public float minD = 2;
-    private Vector3 direction;
-    private float deltaD = 0;
-    public GameObject led;
-    public GameObject cone;
-    private bool isTouched = false;
-    public float touched_dist;
+    // lorsque collision avec le cone, une interruptuion est déclanché, mettant à jour ces deux variables
+    private bool isTouched = false; // à vrai lorsque collision
+    public float touched_dist; // la distance à l'object touché
     
 
     // Use this for initialization
     void Start()
     {
+        // le drone commence en regardant l'objectif
         this.transform.LookAt(new Vector3(target.transform.position.x, this.transform.position.y, target.transform.position.z));
-        //this.transform.Rotate(0, 90, 0);
+        // l'état initial est 0, le décollage
         setState(0);
     }
 
     float monopointCaptor(Vector3 position, Vector3 vec, float range)
+        // simulation d'un capteur monopoint utilisant un raycast (non utilisé ici)
     {
         RaycastHit hit;
         Ray downRay = new Ray(position, vec.normalized*range);
@@ -44,6 +51,7 @@ public class DroneBetterDetector : MonoBehaviour
     }
 
     float realMonopointCaptor()
+        // simulation d'un capteur monopoint en utilisant un cône de détection
     {
 
         if (isTouched)
@@ -54,22 +62,21 @@ public class DroneBetterDetector : MonoBehaviour
         return float.PositiveInfinity ;
     }
 
-    void OnTriggerEnter(Collider collision)
+    void OnTriggerEnter(Collider collision) // fonction appélé lors d'une collision
     {
         isTouched = true;
         touched_dist = Vector3.Distance(this.transform.position, collision.gameObject.GetComponent<Collider>().ClosestPointOnBounds(transform.position));
         Debug.DrawRay(transform.position, - this.transform.position + collision.gameObject.GetComponent<Collider>().ClosestPointOnBounds(transform.position), Color.red, 20, true);
     }
 
-    void OnTriggerStay(Collider collision)
+    void OnTriggerStay(Collider collision) // fonction appélé lors d'une collision
     {
         isTouched = true;
         touched_dist = Vector3.Distance(this.transform.position, collision.gameObject.GetComponent<Collider>().ClosestPointOnBounds(transform.position));
         Debug.DrawRay(transform.position, -this.transform.position + collision.gameObject.GetComponent<Collider>().ClosestPointOnBounds(transform.position), Color.red, 20, true);
-        //Debug.Log(touched_dist);
     }
 
-    private void setState(int s)
+    private void setState(int s)  // change la couleur de la led lord d'un changement de statut
     {
         Debug.Log(state + " -> " + s);
         state = s;
@@ -97,7 +104,7 @@ public class DroneBetterDetector : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void Update() // similaire à la fonction update de DroneBehaviour
     {
         //Debug.DrawRay(this.transform.position, this.transform.forward.normalized * minD, Color.green, -1, true);
         if (state == 0)

@@ -4,28 +4,29 @@ using UnityEngine;
 
 public class DroneVFFnomap : MonoBehaviour
 {
+    // algortihme d'évitement de collisions : VFF
+    // capteur : lidar
+    public GameObject src; // le point de départ du drone
+    public GameObject target; // l'objectif du drone
+    public int state; // l'état du drone
+    public float speed = 0.05F; // la vitesse max du drone
+    public float minH = 1.5f; // la hauteur minimale du drone (utilisé pour le décollage)
+    public float minD = 3; // la distance minimale à un obstacle avant que celui ci soit considéré comme dangereux
+    private Vector3 direction; // la direction du drone
+    private float deltaD = 0; // utilisé lors d'une manoeuvre d'évitement pour mesurer le temps écouler depuis la rencontre d'un obstacle
+    public GameObject led; // la led, qui permet de visualiser l'état du drone
 
-    public GameObject src;
-    public GameObject target;
-    public int state;
-    public float speed = 0.05F;
-    public float minH = 1.5f;
-    public float minD = 3;
-    private Vector3 direction;
-    private float deltaD = 0;
-    public GameObject led;
-    public float coef = 5;
+    public float coef = 5; // coeficient propre à VFF
 
 
     // Use this for initialization
     void Start()
     {
         this.transform.LookAt(new Vector3(target.transform.position.x, this.transform.position.y, target.transform.position.z));
-        //this.transform.Rotate(0, 90, 0);
         setState(0);
     }
 
-    float monopointCaptor(Vector3 position, Vector3 vec, float range)
+    float monopointCaptor(Vector3 position, Vector3 vec, float range)// simulation d'un capteur monopoint utilisant un raycast
     {
         RaycastHit hit;
         Ray downRay = new Ray(position, vec.normalized * range);
@@ -41,24 +42,24 @@ public class DroneVFFnomap : MonoBehaviour
         return hit.distance;
     }
 
-    List<Vector3> lidar(int nbRayon = 64)
+    List<Vector3> lidar(int nbRayon = 64) // simulation d'un capteur de type lidar, en utilisant des raycast, on peu choisir le nombre de rayons
     {
         List<Vector3> pointList = new List<Vector3>();
-        for (int i=0; i< nbRayon; i++)
+        for (int i=0; i< nbRayon; i++) // pour chaque rayon
         {
             Vector3 vec = Quaternion.AngleAxis(i*360/ nbRayon, transform.up) * transform.forward;
             vec.Normalize();
             RaycastHit hit;
-            Vector3 centerLidar = transform.position + transform.up * 0.33f; // le centre se trouve au dessus du lidar (sufisament haut pour dépasser la led, mais le plus bas possible)
+            Vector3 centerLidar = transform.position + transform.up * 0.33f; // le centre se trouve au dessus du drone (sufisament haut pour dépasser la led, mais le plus bas possible)
             Ray downRay = new Ray(centerLidar, vec * minD);
-            if (Physics.Raycast(downRay, out hit))
+            if (Physics.Raycast(downRay, out hit)) // si détection
             {
                 if (hit.distance < minD)
                 {
                     Debug.DrawRay(centerLidar, vec * minD, Color.red, 20, true);
                     pointList.Add(hit.point);
                 }
-                else
+                else // utile, car il peut y avoir un hit, mais plus loin que minD
                 {
                     Debug.DrawRay(centerLidar, vec * minD, Color.green, -1, true);
                 }
@@ -68,10 +69,10 @@ public class DroneVFFnomap : MonoBehaviour
                 Debug.DrawRay(centerLidar, vec * minD, Color.green, -1, true);
             }
         }
-        return pointList;
+        return pointList; // on retourne le nuage de points détecté
     }
 
-    private void setState(int s)
+    private void setState(int s) // change la couleur de la led à chaque changement d'état
     {
         Debug.Log(state + " -> " + s);
         state = s;
@@ -145,23 +146,6 @@ public class DroneVFFnomap : MonoBehaviour
             {
                 Debug.Log("succès");
                 setState(5);
-            }
-        }
-        else if (state == 4)
-        {
-            deltaD += 1;
-            //Vector2 f = new Vector2(this.transform.right[0], this.transform.right[2]);
-            //Vector2 d = new Vector2(direction[0], direction[2]);
-            //float angle = Vector2.Angle(f, d);
-            //Debug.Log(angle);
-            var targetRotation = Quaternion.LookRotation(new Vector3(target.transform.position.x, this.transform.position.y, target.transform.position.z) - transform.position);
-            //var oldRotattion = transform.rotation;
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, speed / 2);
-
-            if (deltaD > 60)
-            {
-                setState(1);
-                deltaD = 0;
             }
         }
 
